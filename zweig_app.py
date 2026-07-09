@@ -7,6 +7,7 @@ S&P 500 版 Zweig Breadth Thrust 廣度衝刺偵測
 import streamlit as st
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 st.set_page_config(page_title="Zweig 廣度衝刺（S&P 500）", page_icon="📈", layout="wide")
 st.title("📈 Zweig Breadth Thrust — S&P 500 版")
@@ -16,9 +17,10 @@ st.caption("用 500 檔成分股的每日漲跌家數，偵測「10 日內從 40
 # ---------- 資料 ----------
 @st.cache_data(ttl=6 * 3600)
 def get_sp500_tickers():
-    tabs = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-    syms = tabs[0]["Symbol"].astype(str).tolist()
-    return [s.replace(".", "-").strip() for s in syms]
+    # 讀打包在同資料夾的清單，不需 lxml / 不連 Wikipedia
+    path = Path(__file__).parent / "sp500_tickers.csv"
+    df = pd.read_csv(path)
+    return [str(x).replace(".", "-").strip() for x in df["Symbol"]]
 
 
 @st.cache_data(ttl=6 * 3600)
@@ -96,7 +98,7 @@ with st.sidebar:
 # ---------- 主流程（抓資料放在按鈕後，避免一開頁就卡） ----------
 if st.button("📥 抓取 S&P 500 並計算", type="primary"):
     try:
-        with st.spinner("取得 S&P 500 成分股清單…"):
+        with st.spinner("讀取 S&P 500 成分股清單…"):
             tickers = get_sp500_tickers()
         with st.spinner(f"下載 {len(tickers)} 檔日線資料（可能要 1～3 分鐘）…"):
             closes = download_closes(tickers, period)
